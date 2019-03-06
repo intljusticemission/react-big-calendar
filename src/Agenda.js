@@ -63,11 +63,13 @@ class Agenda extends React.Component {
 
   renderDay = (day, events, dayKey) => {
     let {
-      selected,
-      getters,
       accessors,
-      localizer,
       components: { event: Event, date: AgendaDate },
+      getters,
+      localizer,
+      onDoubleClickEvent,
+      onSelectEvent,
+      selected,
     } = this.props
 
     events = events.filter(e =>
@@ -110,7 +112,13 @@ class Agenda extends React.Component {
           <td className="rbc-agenda-time-cell">
             {this.timeRangeLabel(day, event)}
           </td>
-          <td className="rbc-agenda-event-cell">
+          <td
+            className="rbc-agenda-event-cell"
+            onClick={e => onSelectEvent && onSelectEvent(event, e)}
+            onDoubleClick={e =>
+              onDoubleClickEvent && onDoubleClickEvent(event, e)
+            }
+          >
             {Event ? <Event event={event} title={title} /> : title}
           </td>
         </tr>
@@ -194,6 +202,9 @@ Agenda.propTypes = {
   components: PropTypes.object.isRequired,
   getters: PropTypes.object.isRequired,
   localizer: PropTypes.object.isRequired,
+
+  onSelectEvent: PropTypes.func,
+  onDoubleClickEvent: PropTypes.func,
 }
 
 Agenda.defaultProps = {
