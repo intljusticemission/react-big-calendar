@@ -776,14 +776,15 @@ class Calendar extends React.Component {
   constructor(...args) {
     super(...args)
     this.state = {
-      context: this.getContext(this.props),
+      context: Calendar.getContext(this.props),
     }
   }
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    this.setState({ context: this.getContext(nextProps) })
+
+  static getDerivedStateFromProps(nextProps) {
+    return { context: Calendar.getContext(nextProps) }
   }
 
-  getContext({
+  static getContext({
     startAccessor,
     endAccessor,
     allDayAccessor,

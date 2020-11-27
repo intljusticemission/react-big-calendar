@@ -1,21 +1,10 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 import clsx from 'clsx'
-import { accessor } from '../../utils/propTypes'
 import { accessor as get } from '../../utils/accessors'
+import DragAndDropContext from './DragAndDropContext'
 
 class EventWrapper extends React.Component {
-  static contextTypes = {
-    draggable: PropTypes.shape({
-      onStart: PropTypes.func,
-      onEnd: PropTypes.func,
-      onBeginAction: PropTypes.func,
-      draggableAccessor: accessor,
-      resizableAccessor: accessor,
-      dragAndDropAction: PropTypes.object,
-    }),
-  }
-
   static propTypes = {
     type: PropTypes.oneOf(['date', 'time']),
     event: PropTypes.object.isRequired,
@@ -174,5 +163,7 @@ class EventWrapper extends React.Component {
     return children
   }
 }
+
+EventWrapper.contextType = DragAndDropContext
 
 export default EventWrapper

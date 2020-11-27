@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types'
 import React from 'react'
 import * as dates from '../../utils/dates'
-import { findDOMNode } from 'react-dom'
 
 import Selection, {
   getBoundsForNode,
@@ -10,6 +9,7 @@ import Selection, {
 import TimeGridEvent from '../../TimeGridEvent'
 import { dragAccessors } from './common'
 import NoopWrapper from '../../NoopWrapper'
+import DragAndDropContext from './DragAndDropContext'
 
 const pointInColumn = (bounds, { x, y }) => {
   const { left, right, top } = bounds
@@ -27,20 +27,10 @@ class EventContainerWrapper extends React.Component {
     resource: PropTypes.any,
   }
 
-  static contextTypes = {
-    draggable: PropTypes.shape({
-      onStart: PropTypes.func,
-      onEnd: PropTypes.func,
-      onDropFromOutside: PropTypes.func,
-      onBeginAction: PropTypes.func,
-      dragAndDropAction: PropTypes.object,
-      dragFromOutsideItem: PropTypes.func,
-    }),
-  }
-
   constructor(...args) {
     super(...args)
     this.state = {}
+    this.ref = React.createRef()
   }
 
   componentDidMount() {
@@ -132,7 +122,10 @@ class EventContainerWrapper extends React.Component {
   }
 
   _selectable = () => {
-    let node = findDOMNode(this)
+    let node = this.ref.current
+    if (!node) {
+      return false
+    }
     let isBeingDragged = false
     let selector = (this._selector = new Selection(() =>
       node.closest('.rbc-time-view')
@@ -250,6 +243,7 @@ class EventContainerWrapper extends React.Component {
     else label = localizer.format({ start, end }, format)
 
     return React.cloneElement(children, {
+      ref: this.ref,
       children: (
         <React.Fragment>
           {events}
@@ -274,5 +268,6 @@ class EventContainerWrapper extends React.Component {
 }
 
 EventContainerWrapper.propTypes = propTypes
+EventContainerWrapper.contextType = DragAndDropContext
 
 export default EventContainerWrapper

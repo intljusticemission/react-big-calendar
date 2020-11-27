@@ -2,7 +2,6 @@ import PropTypes from 'prop-types'
 import clsx from 'clsx'
 import * as animationFrame from 'dom-helpers/animationFrame'
 import React, { Component } from 'react'
-import { findDOMNode } from 'react-dom'
 import memoize from 'memoize-one'
 
 import * as dates from './utils/dates'
@@ -21,24 +20,20 @@ export default class TimeGrid extends Component {
     super(props)
 
     this.state = { gutterWidth: undefined, isOverflowing: null }
-
     this.scrollRef = React.createRef()
     this.contentRef = React.createRef()
-    this._scrollRatio = null
-  }
-
-  UNSAFE_componentWillMount() {
-    this.calculateScroll()
+    this.gutterRef = React.createRef()
   }
 
   componentDidMount() {
+    const scrollRatio = this.calculateScroll()
     this.checkOverflow()
 
     if (this.props.width == null) {
       this.measureGutter()
     }
 
-    this.applyScroll()
+    this.applyScroll(scrollRatio)
 
     window.addEventListener('resize', this.handleResize)
   }
@@ -64,28 +59,29 @@ export default class TimeGrid extends Component {
     }
   }
 
-  componentDidUpdate() {
+  getSnapshotBeforeUpdate(prevProps) {
+    const { range, scrollToTime } = this.props
+    // When paginating, reset scroll
+    if (
+      !dates.eq(prevProps.range[0], range[0], 'minute') ||
+      !dates.eq(prevProps.scrollToTime, scrollToTime, 'minute')
+    ) {
+      return {
+        scrollRatio: this.calculateScroll(this.props),
+      }
+    }
+    return null
+  }
+
+  componentDidUpdate(_prevProps, _prevState, snapshot) {
     if (this.props.width == null) {
       this.measureGutter()
     }
 
-    this.applyScroll()
-    //this.checkOverflow()
-  }
-
-  UNSAFE_componentWillReceiveProps(nextProps) {
-    const { range, scrollToTime } = this.props
-    // When paginating, reset scroll
-    if (
-      !dates.eq(nextProps.range[0], range[0], 'minute') ||
-      !dates.eq(nextProps.scrollToTime, scrollToTime, 'minute')
-    ) {
-      this.calculateScroll(nextProps)
+    if (snapshot && snapshot.scrollRatio !== undefined) {
+      this.applyScroll(snapshot.scrollRatio)
     }
-  }
-
-  gutterRef = ref => {
-    this.gutter = ref && findDOMNode(ref)
+    //this.checkOverflow()
   }
 
   handleSelectAlldayEvent = (...args) => {
@@ -263,7 +259,9 @@ export default class TimeGrid extends Component {
     }
     this.measureGutterAnimationFrameRequest = window.requestAnimationFrame(
       () => {
-        const width = getWidth(this.gutter)
+        const width = this.gutterRef.current
+          ? getWidth(this.gutterRef.current.ref.current)
+          : 0
 
         if (width && this.state.gutterWidth !== width) {
           this.setState({ gutterWidth: width })
@@ -272,13 +270,9 @@ export default class TimeGrid extends Component {
     )
   }
 
-  applyScroll() {
-    if (this._scrollRatio != null) {
-      const content = this.contentRef.current
-      content.scrollTop = content.scrollHeight * this._scrollRatio
-      // Only do this once
-      this._scrollRatio = null
-    }
+  applyScroll(scrollRatio) {
+    const content = this.contentRef.current
+    content.scrollTop = content.scrollHeight * scrollRatio
   }
 
   calculateScroll(props = this.props) {
@@ -287,7 +281,7 @@ export default class TimeGrid extends Component {
     const diffMillis = scrollToTime - dates.startOf(scrollToTime, 'day')
     const totalMillis = dates.diff(max, min)
 
-    this._scrollRatio = diffMillis / totalMillis
+    return diffMillis / totalMillis
   }
 
   checkOverflow = () => {
