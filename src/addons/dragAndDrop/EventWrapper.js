@@ -27,6 +27,7 @@ class EventWrapper extends React.Component {
     continuesAfter: PropTypes.bool,
     isDragging: PropTypes.bool,
     isResizing: PropTypes.bool,
+    resource: PropTypes.number,
     resizable: PropTypes.bool,
   }
 
@@ -52,6 +53,8 @@ class EventWrapper extends React.Component {
   }
   handleStartDragging = e => {
     if (e.button === 0) {
+      let extendedEvent = this.props.event
+      extendedEvent.sourceResource = this.props.resource
       this.context.draggable.onBeginAction(this.props.event, 'move')
     }
   }

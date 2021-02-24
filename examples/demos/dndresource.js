@@ -12,7 +12,7 @@ const events = [
     title: 'Board meeting',
     start: new Date(2018, 0, 29, 9, 0, 0),
     end: new Date(2018, 0, 29, 13, 0, 0),
-    resourceId: 1,
+    resourceId: [1, 2],
   },
   {
     id: 1,
@@ -77,9 +77,40 @@ class Dnd extends React.Component {
     super(props)
     this.state = {
       events: events,
+      isCopyingMode: true,
     }
 
     this.moveEvent = this.moveEvent.bind(this)
+    this.handleChangeMode = this.handleChangeMode.bind(this)
+  }
+
+  handleChangeMode(e) {
+    this.setState({
+      isCopyingMode: e.target.checked,
+    })
+  }
+
+  modifyResource(oldResourceId, sourceResource, newResourceId, isCopyingMode) {
+    //new array with all present Ids
+    let tempArr = [...oldResourceId]
+
+    if (isCopyingMode) {
+      //add the new Id to the array
+      tempArr.push(newResourceId)
+    } else {
+      if (sourceResource) {
+        //replace old with new
+        const index = tempArr.indexOf(sourceResource)
+
+        if (index !== -1) {
+          tempArr[index] = newResourceId
+        }
+      }
+    }
+
+    // delete duplicates in the array
+    let unique = Array.from(new Set(tempArr))
+    return unique
   }
 
   moveEvent({ event, start, end, resourceId, isAllDay: droppedOnAllDaySlot }) {
@@ -94,7 +125,22 @@ class Dnd extends React.Component {
       allDay = false
     }
 
-    const updatedEvent = { ...event, start, end, resourceId, allDay }
+    const relatedEvent = events[idx]
+
+    //new event obj with updated resource
+    const tempResId = this.modifyResource(
+      relatedEvent.resourceId,
+      relatedEvent.sourceResource,
+      resourceId,
+      this.state.isCopyingMode
+    )
+    const updatedEvent = {
+      ...event,
+      start,
+      end,
+      resourceId: tempResId,
+      allDay,
+    }
 
     const nextEvents = [...events]
     nextEvents.splice(idx, 1, updatedEvent)
@@ -120,21 +166,36 @@ class Dnd extends React.Component {
 
   render() {
     return (
-      <DragAndDropCalendar
-        selectable
-        localizer={this.props.localizer}
-        events={this.state.events}
-        onEventDrop={this.moveEvent}
-        resizable
-        resources={resourceMap}
-        resourceIdAccessor="resourceId"
-        resourceTitleAccessor="resourceTitle"
-        onEventResize={this.resizeEvent}
-        defaultView="day"
-        step={15}
-        showMultiDayTimes={true}
-        defaultDate={new Date(2018, 0, 29)}
-      />
+      <>
+        <div style={{ padding: '40px', background: '#dbdbdb' }}>
+          <label>Copy Event?</label>
+          <input
+            type="checkbox"
+            id="copyMode"
+            defaultChecked={this.state.isCopyingMode}
+            onChange={this.handleChangeMode}
+          />
+          <p>active: {this.state.isCopyingMode ? 'CopyMode' : 'MoveMode'}</p>
+        </div>
+        <DragAndDropCalendar
+          selectable
+          localizer={this.props.localizer}
+          events={this.state.events}
+          onEventDrop={this.moveEvent}
+          onDragStart={args => console.log('dragStart', args)}
+          onSelectSlot={args => console.log('onSelectSlot', args)}
+          onSelectEvent={args => console.log('select', args)}
+          resizable
+          resources={resourceMap}
+          resourceIdAccessor="resourceId"
+          resourceTitleAccessor="resourceTitle"
+          onEventResize={this.resizeEvent}
+          defaultView="day"
+          step={15}
+          showMultiDayTimes={true}
+          defaultDate={new Date(2018, 0, 29)}
+        />
+      </>
     )
   }
 }
